@@ -1,10 +1,12 @@
 import express from "express";
 import { Worker } from "worker_threads";
+import cors from "cors";
 
 const app = express();
 const port = 5987;
 const activeThreads = {};
 
+app.use(cors());
 app.use(express.json());
 
 app.post("/bot/start", (req, res) => {
@@ -58,7 +60,7 @@ app.post("/bot/start", (req, res) => {
   });
 });
 
-app.get("/bot/:username", (req, res) => {
+app.get("/bot/status/:username", (req, res) => {
   const { username } = req.params;
 
   if (activeThreads[username] && activeThreads[username].isRunning()) {
