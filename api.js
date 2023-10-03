@@ -63,7 +63,7 @@ app.post("/bot/start", (req, res) => {
 app.get("/bot/status/:username", (req, res) => {
   const { username } = req.params;
 
-  if (activeThreads[username] && activeThreads[username].isRunning()) {
+  if (activeThreads[username]) {
     return res.status(200).json({
       bot_status: "ACTIVE",
     });
