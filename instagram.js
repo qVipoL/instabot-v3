@@ -9,6 +9,13 @@ const TAG_URL = (tag) => `https://www.instagram.com/explore/tags/${tag}/`;
 const USER_URL = (username) => `https://www.instagram.com/${username}/`;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const sleepForRandomInterval = (min, max) => {
+  const ms = Math.floor(Math.random() * (max - min + 1) + min);
+  return sleep(ms);
+};
+const getRandomNumber = (min, max) => {
+  return Math.floor(Math.random() * (max - min + 1) + min);
+};
 
 const FIVE_MINUTES = 300000;
 const TEN_MINUTES = 600000;
@@ -23,11 +30,15 @@ export class Instagram {
     this.totalStory = 0;
     this.logger = winston.createLogger({
       level: "info",
-      format: winston.format.json(),
-      defaultMeta: { service: "bot-service" },
+      format: winston.format.combine(
+        winston.format.timestamp({
+          format: "YYYY-MM-DD HH:mm:ss",
+        }),
+        winston.format.json()
+      ),
       transports: [
         new winston.transports.File({
-          filename: `./${botName}/${new Date().toISOString()}-info.log`,
+          filename: `./${botName}/${new Date().toISOString()}-errors.log`,
           level: "error",
         }),
         new winston.transports.File({
@@ -54,6 +65,8 @@ export class Instagram {
 
     const followButton = await this.page.$("section button");
 
+    this.logger.info("Trying to follow: " + username);
+
     if (followButton) {
       const followButtonText = await (
         await followButton.getProperty("textContent")
@@ -61,8 +74,13 @@ export class Instagram {
 
       if (followButtonText === "Follow") {
         await followButton.click();
+
+        this.logger.info("Bot followed: " + username);
+
         return true;
       }
+
+      this.logger.info("Bot already following: " + username);
     }
 
     return false;
@@ -72,7 +90,7 @@ export class Instagram {
 
   async initialize() {
     this.browser = await puppeteer.launch({
-      headless: true,
+      headless: false,
     });
     this.page = await this.browser.newPage();
 
@@ -130,7 +148,7 @@ export class Instagram {
       await sleep(1000);
 
       await this.page.click('svg[aria-label="Close"]');
-      await sleep(3528);
+      await sleepForRandomInterval(3000, 8000);
     }
   }
 
@@ -145,7 +163,7 @@ export class Instagram {
 
     await this.page.click('svg[aria-label="Search"]');
     await this.page.type('input[placeholder="Search"]', hashtag, { delay: 87 });
-    await sleep(5000);
+    await sleepForRandomInterval(3000, 8000);
 
     const usernameNodes = await this.page.$$(
       'span[style="line-height: var(--base-line-clamp-line-height); --base-line-clamp-line-height: 18px;"]'
@@ -184,7 +202,7 @@ export class Instagram {
 
       this.logger.info("Bot followed " + this.totalSubs + " users");
 
-      await sleep(3954);
+      await sleepForRandomInterval(3000, 8000);
     }
   }
 
@@ -216,10 +234,10 @@ export class Instagram {
       const randomHashtag =
         hashtags[Math.floor(Math.random() * hashtags.length)];
 
-      await this.searchByHashtagAndLike(randomHashtag);
-      await sleep(FIVE_MINUTES);
-      await this.searchByHashtagAndSub(randomHashtag);
-      await sleep(TEN_MINUTES);
+      await this.searchByHashtagAndLike(randomHashtag, getRandomNumber(1, 3));
+      await sleepForRandomInterval(FIVE_MINUTES, TEN_MINUTES);
+      await this.searchByHashtagAndSub(randomHashtag, getRandomNumber(1, 3));
+      await sleepForRandomInterval(FIVE_MINUTES, TEN_MINUTES);
     }
   }
 }
